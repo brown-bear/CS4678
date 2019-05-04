@@ -31,6 +31,7 @@ client_accept:
     mov rdi, rax
 dupe_sockets:  
     mov rsi, 3
+    add rsp, 20
 dupe_loop:
     dec esi
     mov al, 0x21

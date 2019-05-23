@@ -1,5 +1,16 @@
-;reverse shell:  https://systemoverlord.com/2018/10/30/understanding-shellcode-the-reverse-shell.html
+; Lucas Burke
+; 3 May 2019
+; CS4678 - Assignment 3
+; Binary: nasm -f bin reverse.asm
+; Assembly (for localhost testing): nasm -f elf64 -g reverse.asm
+; Linker: ld -o myrev -m elf_x86_64 reverse.o
+; Comments: Set at port 57281.
+; Help: https://systemoverlord.com/2018/10/30/understanding-shellcode-the-reverse-shell.html
 
+bits 64
+global _start
+section .text
+_start:
 ; Do the steps to setup a socket (1)
 ; Setup the arguments to socket() in appropriate registers
 xor rdx, rdx  ; Flags = 0

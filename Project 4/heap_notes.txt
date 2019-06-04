@@ -1,3 +1,16 @@
+
+set *(unsigned long long*)(0xaddr) = 0xffffffffffffffff0
+
+shell objdump -R easy_hof (to get GOT)
+
+
+602020 - tail
+601040 - scanf
+
+601040-602020-8-16
+
+
+
 uname -a
 
 cat /etc/issue
@@ -23,3 +36,7 @@ PIE: position independent executable -- full randomization and binary will get l
 
 
 checksec.sh is a  protections script to show what protections are enabled on a file
+
+Fastbin up to 160 bytes -- singly linked lists, all of same size (16, 32, 48, 64, 80, 96...160)
+
+Smallbins: 0xA0 -> 0x400 (1k) into 62 bins...consolidation before binning

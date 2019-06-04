@@ -1,0 +1,25 @@
+uname -a
+
+cat /etc/issue
+
+For magic gadget:
+
+look for execve in libc -> need to back up to where the environment pointers are setup and all arguments for bin/sh
+
+OR look for /bin/sh in libc (do this)
+
+for free hook 
+
+how to find free_hook in gdb:    x/xg &__free_hook
+find system:  x /i system (IOT call /bin/sh)
+
+(perl -e `$|=1; <>; print "address 8 bytes";<>;print ' "/bin/sh\address 8 bytes"';<>;print "A"x56;' && cat) | nc addr port
+
+
+RELRO: Relocations Read Only (GOT is read-only) and requires finding another place to overwrite (like free_hook)
+
+
+PIE: position independent executable -- full randomization and binary will get loaded at different locations.  Separate from ASLR.  If ASLR is on, but PIE is off, it will load at the same location everytime
+
+
+checksec.sh is a  protections script to show what protections are enabled on a file

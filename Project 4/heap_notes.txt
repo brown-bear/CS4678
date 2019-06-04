@@ -40,3 +40,7 @@ checksec.sh is a  protections script to show what protections are enabled on a f
 Fastbin up to 160 bytes -- singly linked lists, all of same size (16, 32, 48, 64, 80, 96...160)
 
 Smallbins: 0xA0 -> 0x400 (1k) into 62 bins...consolidation before binning
+
+tcache bins from 16 bytes -> 1k  but only takes 7 items in a tache list, and then it's full.  Anything beyond 8, and it's binned.
+
+double frees into fastbin gets corruption (tcache is ok)
